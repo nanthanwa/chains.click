@@ -2,7 +2,7 @@
 	import type { ChainMini, ChainEIP3085 } from '$lib/types';
 	import { addChain, formatWalletError, getSuccessMessage, hasWallet } from '$lib/wallet';
 	import { toast } from '$lib/stores/toast';
-	import { getIconUrl } from '$lib/utils/ipfs';
+	import { getIconUrl, getFallbackIconUrl } from '$lib/utils/ipfs';
 
 	let {
 		chain,
@@ -75,7 +75,15 @@
 					alt=""
 					class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700"
 					loading="lazy"
-					onerror={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+					onerror={(e) => {
+						const img = e.target as HTMLImageElement;
+						const fallback = getFallbackIconUrl(chain.icon);
+						if (fallback && !img.src.includes('ipfs.io')) {
+							img.src = fallback;
+						} else {
+							img.style.display = 'none';
+						}
+					}}
 				/>
 			{:else}
 				<div class="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-700 flex items-center justify-center">

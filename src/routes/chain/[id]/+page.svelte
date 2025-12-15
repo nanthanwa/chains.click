@@ -6,7 +6,7 @@
 	import { theme } from '$lib/stores/theme';
 	import { toast } from '$lib/stores/toast';
 	import { addChain, formatWalletError, getSuccessMessage, hasWallet, isMobileBrowser, getMobileDeepLink, getWalletDisplayName } from '$lib/wallet';
-	import { getIconUrl } from '$lib/utils/ipfs';
+	import { getIconUrl, getFallbackIconUrl } from '$lib/utils/ipfs';
 	import { onMount } from 'svelte';
 
 	let { data }: { data: PageData } = $props();
@@ -144,6 +144,15 @@
 						alt="{data.chain.name} logo"
 						class="w-16 h-16 rounded-full"
 						loading="eager"
+						onerror={(e) => {
+							const img = e.target as HTMLImageElement;
+							const fallback = getFallbackIconUrl(data.icon);
+							if (fallback && !img.src.includes('ipfs.io')) {
+								img.src = fallback;
+							} else {
+								img.style.display = 'none';
+							}
+						}}
 					/>
 				{:else}
 					<div class="w-16 h-16 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-700 flex items-center justify-center">

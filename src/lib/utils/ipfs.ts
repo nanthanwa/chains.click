@@ -1,28 +1,49 @@
 /**
- * IPFS gateway utilities
+ * IPFS gateway utilities with fallback support
  */
 
-const IPFS_GATEWAY = 'https://ipfs.io/ipfs/';
-
-// Alternative gateways if needed:
-// - https://dweb.link/ipfs/
-// - https://w3s.link/ipfs/
-// - https://nftstorage.link/ipfs/
+const IPFS_GATEWAYS = [
+	'https://dweb.link/ipfs/',
+	'https://ipfs.io/ipfs/'
+];
 
 /**
- * Convert IPFS URL to HTTP gateway URL
+ * Extract IPFS CID from various formats
+ */
+function extractCID(icon: string): string | null {
+	if (icon.startsWith('ipfs://')) {
+		return icon.replace('ipfs://', '');
+	}
+	if (icon.startsWith('Qm') || icon.startsWith('bafy')) {
+		return icon;
+	}
+	return null;
+}
+
+/**
+ * Convert IPFS URL to HTTP gateway URL (uses primary gateway)
  */
 export function getIconUrl(icon: string | undefined): string {
 	if (!icon) return '';
 
-	if (icon.startsWith('ipfs://')) {
-		return icon.replace('ipfs://', IPFS_GATEWAY);
-	}
-
-	// Handle raw CID (no protocol)
-	if (icon.startsWith('Qm') || icon.startsWith('bafy')) {
-		return IPFS_GATEWAY + icon;
+	const cid = extractCID(icon);
+	if (cid) {
+		return IPFS_GATEWAYS[0] + cid;
 	}
 
 	return icon;
+}
+
+/**
+ * Get fallback URL for when primary gateway fails
+ */
+export function getFallbackIconUrl(icon: string | undefined): string | null {
+	if (!icon) return null;
+
+	const cid = extractCID(icon);
+	if (cid && IPFS_GATEWAYS.length > 1) {
+		return IPFS_GATEWAYS[1] + cid;
+	}
+
+	return null;
 }
