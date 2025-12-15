@@ -84,8 +84,41 @@
 </script>
 
 <svelte:head>
-	<title>chains.click - Add chains to your wallet with one click</title>
-	<meta name="description" content="Add blockchain networks to MetaMask and other wallets instantly. Support for {data.stats.total}+ EVM chains." />
+	<!-- Primary Meta Tags -->
+	<title>chains.click - Add Blockchain Networks to Your Wallet</title>
+	<meta name="title" content="chains.click - Add Blockchain Networks to Your Wallet" />
+	<meta name="description" content="One-click add blockchain networks to MetaMask and other Web3 wallets. Support for {data.stats.total}+ EVM chains including Ethereum, Polygon, Arbitrum, and more." />
+	<link rel="canonical" href="https://chains.click" />
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://chains.click" />
+	<meta property="og:title" content="chains.click - Add Blockchain Networks to Your Wallet" />
+	<meta property="og:description" content="One-click add blockchain networks to MetaMask and other Web3 wallets. Support for {data.stats.total}+ EVM chains." />
+	<meta property="og:image" content="https://chains.click/og/home.png" />
+
+	<!-- Twitter -->
+	<meta property="twitter:card" content="summary_large_image" />
+	<meta property="twitter:url" content="https://chains.click" />
+	<meta property="twitter:title" content="chains.click - Add Blockchain Networks to Your Wallet" />
+	<meta property="twitter:description" content="One-click add blockchain networks to MetaMask and other Web3 wallets. Support for {data.stats.total}+ EVM chains." />
+	<meta property="twitter:image" content="https://chains.click/og/home.png" />
+
+	<!-- Structured Data -->
+	{@html `<script type="application/ld+json">${JSON.stringify({
+		"@context": "https://schema.org",
+		"@type": "WebApplication",
+		"name": "chains.click",
+		"description": "Add blockchain networks to MetaMask and other Web3 wallets with one click",
+		"url": "https://chains.click",
+		"applicationCategory": "Utility",
+		"operatingSystem": "Web",
+		"offers": {
+			"@type": "Offer",
+			"price": "0",
+			"priceCurrency": "USD"
+		}
+	})}</script>`}
 </svelte:head>
 
 <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
