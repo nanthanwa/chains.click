@@ -166,6 +166,32 @@ To update an existing custom chain:
 2. Make your changes
 3. Submit a PR with a clear description of what changed and why
 
+## CI/CD Pipeline
+
+All pull requests go through automated checks:
+
+| Workflow | Trigger | Checks |
+|----------|---------|--------|
+| **CI** | Every PR | Type check, Build |
+| **Validate PR** | PR to `_data/custom/**` | JSON schema, RPC health |
+| **Deploy** | Push to main | Build & deploy to Cloudflare |
+| **Sync** | Every 6 hours | Fetch upstream chain data |
+
+### Required Secrets (for maintainers)
+
+| Secret | Description |
+|--------|-------------|
+| `CLOUDFLARE_API_TOKEN` | API token with Pages deploy permissions |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+
+### Branch Protection (Recommended)
+
+For the `main` branch:
+- Require pull request before merging
+- Require status checks: `build`
+- Require conversation resolution
+- For `_data/custom/**` changes: require maintainer approval
+
 ## Questions?
 
 - Open an issue on GitHub

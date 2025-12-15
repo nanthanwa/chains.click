@@ -2,8 +2,6 @@
  * Server-side caching utilities for Cloudflare edge
  */
 
-import { createHash } from 'crypto';
-
 // Cache duration constants (in seconds)
 export const CACHE_DURATIONS = {
 	// Client-side cache
@@ -59,12 +57,21 @@ export function getCacheHeaders(options: {
 }
 
 /**
- * Generate ETag from data
+ * Generate ETag from data using a simple hash
+ * Works in both Node.js and Cloudflare Workers environments
  */
 export function generateETag(data: unknown): string {
 	const content = typeof data === 'string' ? data : JSON.stringify(data);
-	const hash = createHash('md5').update(content).digest('hex').slice(0, 16);
-	return `"${hash}"`;
+	// Simple hash function for ETag generation
+	let hash = 0;
+	for (let i = 0; i < content.length; i++) {
+		const char = content.charCodeAt(i);
+		hash = ((hash << 5) - hash) + char;
+		hash = hash & hash; // Convert to 32-bit integer
+	}
+	// Convert to hex and ensure positive
+	const hexHash = (hash >>> 0).toString(16).padStart(8, '0');
+	return `"${hexHash}-${content.length.toString(16)}"`;
 }
 
 /**
