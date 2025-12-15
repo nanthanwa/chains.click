@@ -1,5 +1,5 @@
 /**
- * Server-side caching utilities for Cloudflare Workers
+ * Server-side caching utilities for Cloudflare edge
  */
 
 import { createHash } from 'crypto';
@@ -20,16 +20,6 @@ export const CACHE_DURATIONS = {
 	SWR_SHORT: 86400, // 1 day
 	SWR_MEDIUM: 604800, // 1 week
 	SWR_LONG: 2592000 // 30 days
-} as const;
-
-// KV keys
-export const KV_KEYS = {
-	CHAINS_MINI: 'chains:mini',
-	CHAINS_EIP3085: 'chains:eip3085',
-	CHAINS_FULL: 'chains:full',
-	STATS: 'chains:stats',
-	CHAIN_BY_ID: (id: number | string) => `chain:${id}`,
-	LAST_UPDATED: 'meta:lastUpdated'
 } as const;
 
 /**
@@ -134,55 +124,3 @@ export const CACHE_PRESETS = {
 		staleWhileRevalidate: CACHE_DURATIONS.SWR_LONG
 	}
 } as const;
-
-/**
- * Type for Cloudflare KV namespace
- */
-export interface KVNamespace {
-	get(key: string, options?: { type?: 'text' | 'json' | 'arrayBuffer' | 'stream' }): Promise<any>;
-	put(key: string, value: string | ArrayBuffer | ReadableStream, options?: { expirationTtl?: number; expiration?: number; metadata?: any }): Promise<void>;
-	delete(key: string): Promise<void>;
-	list(options?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ keys: { name: string; expiration?: number; metadata?: any }[]; list_complete: boolean; cursor?: string }>;
-}
-
-/**
- * Get data from KV with fallback
- */
-export async function getFromKV<T>(
-	kv: KVNamespace | undefined,
-	key: string,
-	fallback: () => T
-): Promise<T> {
-	if (!kv) {
-		return fallback();
-	}
-
-	try {
-		const cached = await kv.get(key, { type: 'json' });
-		if (cached) {
-			return cached as T;
-		}
-	} catch (e) {
-		console.error(`KV get error for ${key}:`, e);
-	}
-
-	return fallback();
-}
-
-/**
- * Store data in KV
- */
-export async function putToKV(
-	kv: KVNamespace | undefined,
-	key: string,
-	value: unknown,
-	ttl?: number
-): Promise<void> {
-	if (!kv) return;
-
-	try {
-		await kv.put(key, JSON.stringify(value), ttl ? { expirationTtl: ttl } : undefined);
-	} catch (e) {
-		console.error(`KV put error for ${key}:`, e);
-	}
-}
