@@ -15,10 +15,9 @@ export const load: PageServerLoad = async () => {
 		.map(id => chains.find(c => c.id === id))
 		.filter((c): c is ChainMini => c !== undefined);
 
-	// Get mainnets (excluding popular ones for "other mainnets" section)
+	// Get all mainnets (excluding popular ones for "other mainnets" section)
 	const mainnets = chains
-		.filter(c => !c.isTestnet && !POPULAR_CHAIN_IDS.includes(c.id))
-		.slice(0, 50);
+		.filter(c => !c.isTestnet && !POPULAR_CHAIN_IDS.includes(c.id));
 
 	return {
 		stats: chainStats,
