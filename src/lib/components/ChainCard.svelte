@@ -1,5 +1,7 @@
 <script lang="ts">
-	import type { ChainMini } from '$lib/types';
+	import type { ChainMini, ChainEIP3085 } from '$lib/types';
+	import { addChain, formatWalletError, getSuccessMessage, hasWallet } from '$lib/wallet';
+	import { toast } from '$lib/stores/toast';
 
 	let {
 		chain,
@@ -10,6 +12,43 @@
 		onAdd?: (chain: ChainMini) => void;
 		onSelect?: (chain: ChainMini) => void;
 	} = $props();
+
+	let isAdding = $state(false);
+	const walletAvailable = $derived(hasWallet());
+
+	async function handleQuickAdd(e: MouseEvent) {
+		e.stopPropagation();
+
+		if (!walletAvailable) {
+			// Open modal instead if no wallet
+			onSelect?.(chain);
+			return;
+		}
+
+		if (isAdding) return;
+
+		isAdding = true;
+		try {
+			// Fetch chain data first
+			const res = await fetch(`/api/chains/${chain.id}`);
+			if (!res.ok) {
+				toast.error('Failed to load chain data');
+				return;
+			}
+			const chainData: ChainEIP3085 = await res.json();
+
+			const result = await addChain(chainData);
+			if (result.success) {
+				toast.success(getSuccessMessage(result, chain.name));
+			} else {
+				toast.error(formatWalletError(result));
+			}
+		} catch (error: any) {
+			toast.error(error.message || 'Failed to add chain');
+		} finally {
+			isAdding = false;
+		}
+	}
 
 	function getIconUrl(icon: string | undefined): string {
 		if (!icon) return '';
@@ -79,14 +118,19 @@
 
 		<!-- Add Button -->
 		<button
-			onclick={(e) => { e.stopPropagation(); onAdd?.(chain); }}
-			class="flex-shrink-0 px-4 py-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 min-h-[44px] min-w-[44px] flex items-center justify-center"
+			onclick={handleQuickAdd}
+			disabled={isAdding || chain.rpcCount === 0}
+			class="flex-shrink-0 px-4 py-2 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 min-h-[44px] min-w-[44px] flex items-center justify-center"
 			aria-label="Add {chain.name} to wallet"
 		>
-			<span class="hidden sm:inline">Add</span>
-			<svg class="w-5 h-5 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-			</svg>
+			{#if isAdding}
+				<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+			{:else}
+				<span class="hidden sm:inline">Add</span>
+				<svg class="w-5 h-5 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+				</svg>
+			{/if}
 		</button>
 	</div>
 </article>

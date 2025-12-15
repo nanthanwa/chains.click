@@ -73,42 +73,6 @@
 		selectedChainData = undefined;
 	}
 
-	async function handleAddChain(chain: ChainMini) {
-		// Will be fully implemented in Issue #5
-		if (typeof window !== 'undefined' && (window as any).ethereum) {
-			try {
-				// Fetch chain data if not already loaded
-				let chainData = selectedChainData;
-				if (!chainData || selectedChain?.id !== chain.id) {
-					const res = await fetch(`/api/chains/${chain.id}`);
-					if (res.ok) {
-						chainData = await res.json();
-					}
-				}
-
-				if (!chainData) {
-					alert('Failed to load chain data');
-					return;
-				}
-
-				await (window as any).ethereum.request({
-					method: 'wallet_addEthereumChain',
-					params: [chainData]
-				});
-			} catch (error: any) {
-				if (error.code === 4001) {
-					// User rejected
-					console.log('User rejected the request');
-				} else {
-					console.error('Failed to add chain:', error);
-					alert(`Failed to add chain: ${error.message || 'Unknown error'}`);
-				}
-			}
-		} else {
-			alert('No wallet detected. Please install MetaMask or another Web3 wallet.');
-		}
-	}
-
 	// Filter chains based on testnet toggle
 	const filteredPopularChains = $derived(
 		$showTestnets ? data.popularChains : data.popularChains.filter(c => !c.isTestnet)
@@ -155,7 +119,6 @@
 					chains={searchResults}
 					title="Search Results"
 					emptyMessage={`No chains found for "${$searchQuery}"`}
-					onAdd={handleAddChain}
 					onSelect={handleSelectChain}
 				/>
 			{/if}
@@ -164,7 +127,6 @@
 			<ChainList
 				chains={filteredPopularChains}
 				title="Popular Chains"
-				onAdd={handleAddChain}
 				onSelect={handleSelectChain}
 			/>
 
@@ -174,7 +136,6 @@
 				title={$showTestnets ? "All Chains" : "Other Mainnets"}
 				initialCount={12}
 				loadMoreCount={24}
-				onAdd={handleAddChain}
 				onSelect={handleSelectChain}
 			/>
 		{/if}
@@ -207,6 +168,5 @@
 		chainData={selectedChainData}
 		isLoading={isLoadingChainData}
 		onClose={handleCloseModal}
-		onAdd={handleAddChain}
 	/>
 {/if}

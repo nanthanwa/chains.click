@@ -1,19 +1,42 @@
 <script lang="ts">
 	import type { ChainMini, ChainEIP3085 } from '$lib/types';
+	import { addChain, formatWalletError, getSuccessMessage, hasWallet, isMobileBrowser, getMobileDeepLink } from '$lib/wallet';
+	import { toast } from '$lib/stores/toast';
 
 	let {
 		chain,
 		chainData,
 		isLoading = false,
-		onClose,
-		onAdd
+		onClose
 	}: {
 		chain: ChainMini;
 		chainData?: ChainEIP3085;
 		isLoading?: boolean;
 		onClose: () => void;
-		onAdd: (chain: ChainMini) => void;
 	} = $props();
+
+	let isAdding = $state(false);
+	const walletAvailable = $derived(hasWallet());
+	const isMobile = $derived(isMobileBrowser());
+
+	async function handleAddToWallet() {
+		if (!chainData || isAdding) return;
+
+		isAdding = true;
+		try {
+			const result = await addChain(chainData);
+			if (result.success) {
+				toast.success(getSuccessMessage(result, chain.name));
+				onClose();
+			} else {
+				toast.error(formatWalletError(result));
+			}
+		} catch (error: any) {
+			toast.error(error.message || 'Failed to add chain');
+		} finally {
+			isAdding = false;
+		}
+	}
 
 	function getIconUrl(icon: string | undefined): string {
 		if (!icon) return '';
@@ -37,6 +60,7 @@
 
 	function copyToClipboard(text: string) {
 		navigator.clipboard.writeText(text);
+		toast.info('Copied to clipboard');
 	}
 </script>
 
@@ -185,13 +209,60 @@
 
 		<!-- Footer -->
 		<div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-			<button
-				onclick={() => onAdd(chain)}
-				disabled={!chainData || chain.rpcCount === 0}
-				class="w-full py-3 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 text-white font-medium rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 min-h-[48px]"
-			>
-				Add to Wallet
-			</button>
+			{#if walletAvailable}
+				<button
+					onclick={handleAddToWallet}
+					disabled={!chainData || chain.rpcCount === 0 || isAdding}
+					class="w-full py-3 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 min-h-[48px] flex items-center justify-center gap-2"
+				>
+					{#if isAdding}
+						<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+						<span>Adding...</span>
+					{:else}
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+						</svg>
+						<span>Add to Wallet</span>
+					{/if}
+				</button>
+			{:else if isMobile}
+				<div class="space-y-3">
+					<p class="text-sm text-slate-500 dark:text-slate-400 text-center">
+						Open in your wallet app to add this chain:
+					</p>
+					<div class="flex gap-2">
+						<a
+							href={getMobileDeepLink('metamask')}
+							class="flex-1 py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+						>
+							MetaMask
+						</a>
+						<a
+							href={getMobileDeepLink('trust')}
+							class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+						>
+							Trust Wallet
+						</a>
+					</div>
+				</div>
+			{:else}
+				<div class="text-center space-y-2">
+					<p class="text-sm text-slate-500 dark:text-slate-400">
+						No wallet detected. Install a Web3 wallet to add chains.
+					</p>
+					<a
+						href="https://metamask.io/download/"
+						target="_blank"
+						rel="noopener"
+						class="inline-flex items-center gap-2 text-blue-500 hover:text-blue-600 text-sm font-medium"
+					>
+						Install MetaMask
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+						</svg>
+					</a>
+				</div>
+			{/if}
 		</div>
 	</div>
 </div>
