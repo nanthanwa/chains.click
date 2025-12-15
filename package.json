@@ -11,7 +11,9 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"cf:dev": "wrangler pages dev .svelte-kit/cloudflare --live-reload",
-		"cf:deploy": "npm run build && wrangler pages deploy .svelte-kit/cloudflare"
+		"cf:deploy": "npm run build && wrangler pages deploy .svelte-kit/cloudflare",
+		"sync": "npx tsx scripts/sync-chains.ts",
+		"sync:watch": "npx tsx watch scripts/sync-chains.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-cloudflare": "^7.0.0",
@@ -19,6 +21,7 @@
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
 		"svelte": "^5.45.6",
 		"svelte-check": "^4.3.4",
+		"tsx": "^4.19.0",
 		"typescript": "^5.9.3",
 		"vite": "^7.2.6",
 		"wrangler": "^4.0.0",
