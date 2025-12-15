@@ -1,0 +1,49 @@
+name: Validate Chain Data PR
+
+on:
+  pull_request:
+    paths:
+      - '_data/custom/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate chain data
+        run: npx tsx scripts/validate-chains.ts
+
+      - name: Comment on PR (success)
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ **Validation Passed**\n\nAll chain data validations have passed. A maintainer will review your submission shortly.'
+            })
+
+      - name: Comment on PR (failure)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Validation Failed**\n\nPlease check the workflow logs for details and fix the issues before requesting review.\n\nCommon issues:\n- Invalid JSON syntax\n- Missing required fields\n- RPC endpoints not reachable\n- Duplicate chainId'
+            })

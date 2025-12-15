@@ -1,0 +1,174 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://chains.click/schemas/chain.json",
+  "title": "EVM Chain",
+  "description": "Schema for EVM-compatible blockchain network configuration",
+  "type": "object",
+  "required": ["name", "chain", "shortName", "chainId", "networkId", "rpc", "nativeCurrency"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Full name of the blockchain network",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "chain": {
+      "type": "string",
+      "description": "Short identifier for the chain",
+      "minLength": 1,
+      "maxLength": 20
+    },
+    "shortName": {
+      "type": "string",
+      "description": "Short name used in URLs and identifiers",
+      "pattern": "^[a-z0-9-]+$",
+      "minLength": 1,
+      "maxLength": 30
+    },
+    "chainId": {
+      "type": "integer",
+      "description": "Unique chain identifier (EIP-155)",
+      "minimum": 1
+    },
+    "networkId": {
+      "type": "integer",
+      "description": "Network identifier (usually same as chainId)",
+      "minimum": 1
+    },
+    "rpc": {
+      "type": "array",
+      "description": "List of RPC endpoint URLs",
+      "items": {
+        "type": "string",
+        "format": "uri",
+        "pattern": "^https://"
+      },
+      "minItems": 1
+    },
+    "faucets": {
+      "type": "array",
+      "description": "List of faucet URLs for testnets",
+      "items": {
+        "type": "string",
+        "format": "uri"
+      }
+    },
+    "nativeCurrency": {
+      "type": "object",
+      "description": "Native currency of the network",
+      "required": ["name", "symbol", "decimals"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 10
+        },
+        "decimals": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 36
+        }
+      },
+      "additionalProperties": false
+    },
+    "infoURL": {
+      "type": "string",
+      "description": "URL to the project's website",
+      "format": "uri"
+    },
+    "explorers": {
+      "type": "array",
+      "description": "List of block explorers",
+      "items": {
+        "type": "object",
+        "required": ["name", "url"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "standard": {
+            "type": "string",
+            "enum": ["EIP3091", "none"]
+          },
+          "icon": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "icon": {
+      "type": "string",
+      "description": "Icon identifier (matches filename in icons directory)",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "features": {
+      "type": "array",
+      "description": "Supported features/EIPs",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": ["EIP155", "EIP1559", "EIP3085", "EIP3326"]
+          }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "description": "Current status of the network",
+      "enum": ["active", "incubating", "deprecated"]
+    },
+    "slip44": {
+      "type": "integer",
+      "description": "SLIP-44 coin type for HD wallet derivation"
+    },
+    "ens": {
+      "type": "object",
+      "description": "ENS registry configuration",
+      "properties": {
+        "registry": {
+          "type": "string",
+          "pattern": "^0x[a-fA-F0-9]{40}$"
+        }
+      }
+    },
+    "parent": {
+      "type": "object",
+      "description": "Parent chain information for L2s",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["L2", "shard"]
+        },
+        "chain": {
+          "type": "string"
+        },
+        "bridges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

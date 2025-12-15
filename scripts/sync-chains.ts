@@ -4,10 +4,12 @@
  * Generates optimized JSON files for frontend consumption
  */
 
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 const CHAINS_REPO_API = 'https://api.github.com/repos/ethereum-lists/chains/contents/_data/chains';
+const CUSTOM_CHAINS_DIR = join(process.cwd(), '_data', 'custom', 'chains');
+const CUSTOM_ICONS_DIR = join(process.cwd(), '_data', 'custom', 'icons');
 const ICONS_REPO_API = 'https://api.github.com/repos/ethereum-lists/chains/contents/_data/icons';
 const RAW_BASE_URL = 'https://raw.githubusercontent.com/ethereum-lists/chains/master/_data';
 
@@ -184,6 +186,49 @@ function getIconUrl(icons: IconData[] | null): string | undefined {
 	return icon?.url;
 }
 
+// Load custom chains from _data/custom/chains
+function loadCustomChains(): ChainFull[] {
+	const customChains: ChainFull[] = [];
+
+	if (!existsSync(CUSTOM_CHAINS_DIR)) {
+		return customChains;
+	}
+
+	const files = readdirSync(CUSTOM_CHAINS_DIR)
+		.filter(f => f.startsWith('eip155-') && f.endsWith('.json'));
+
+	console.log(`Found ${files.length} custom chain file(s)`);
+
+	for (const filename of files) {
+		try {
+			const filePath = join(CUSTOM_CHAINS_DIR, filename);
+			const content = readFileSync(filePath, 'utf-8');
+			const chain = JSON.parse(content) as ChainData;
+
+			// Load custom icon if available
+			let iconUrl: string | undefined;
+			if (chain.icon && existsSync(CUSTOM_ICONS_DIR)) {
+				const iconPath = join(CUSTOM_ICONS_DIR, `${chain.icon}.json`);
+				if (existsSync(iconPath)) {
+					try {
+						const iconData = JSON.parse(readFileSync(iconPath, 'utf-8')) as IconData[];
+						iconUrl = getIconUrl(iconData);
+					} catch {
+						console.warn(`Failed to load icon for ${chain.name}`);
+					}
+				}
+			}
+
+			customChains.push({ ...chain, iconUrl });
+			console.log(`  Loaded custom chain: ${chain.name} (${chain.chainId})`);
+		} catch (error) {
+			console.warn(`Failed to load ${filename}:`, error);
+		}
+	}
+
+	return customChains;
+}
+
 async function main() {
 	console.log('Starting chain data sync...');
 	const startTime = Date.now();
@@ -227,7 +272,22 @@ async function main() {
 		}
 	}
 
-	console.log(`Fetched ${chains.length} chains`);
+	console.log(`Fetched ${chains.length} chains from ethereum-lists`);
+
+	// Load and merge custom chains
+	const customChains = loadCustomChains();
+	const existingChainIds = new Set(chains.map(c => c.chainId));
+
+	for (const customChain of customChains) {
+		if (existingChainIds.has(customChain.chainId)) {
+			console.log(`  Skipping custom chain ${customChain.chainId} - already exists in ethereum-lists`);
+		} else {
+			chains.push(customChain);
+			console.log(`  Added custom chain: ${customChain.name} (${customChain.chainId})`);
+		}
+	}
+
+	console.log(`Total chains after merge: ${chains.length}`);
 
 	// Sort by chainId
 	chains.sort((a, b) => a.chainId - b.chainId);
@@ -272,6 +332,7 @@ async function main() {
 		mainnets: chainsMini.filter(c => !c.isTestnet).length,
 		testnets: chainsMini.filter(c => c.isTestnet).length,
 		withRpc: Object.keys(chainsEIP3085).length,
+		custom: customChains.filter(c => !existingChainIds.has(c.chainId)).length,
 		lastUpdated: new Date().toISOString()
 	};
 

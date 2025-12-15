@@ -13,7 +13,8 @@
 		"cf:dev": "wrangler pages dev .svelte-kit/cloudflare --live-reload",
 		"cf:deploy": "npm run build && wrangler pages deploy .svelte-kit/cloudflare",
 		"sync": "npx tsx scripts/sync-chains.ts",
-		"sync:watch": "npx tsx watch scripts/sync-chains.ts"
+		"sync:watch": "npx tsx watch scripts/sync-chains.ts",
+		"validate": "npx tsx scripts/validate-chains.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-cloudflare": "^7.0.0",
