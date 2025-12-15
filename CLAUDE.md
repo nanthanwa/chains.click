@@ -16,6 +16,7 @@ A web3 service that helps users add blockchain RPC details to their crypto walle
 - Create feature branch for each issue: `feature/issue-{number}-{short-description}`
 - Example: `feature/issue-1-project-setup`
 - All work must go through PR (but no push to remote unless told)
+- **USE REBASE** instead of merge: `git checkout main && git rebase feature/issue-{N}-description`
 
 ### 3. Progress Tracking
 Before starting any work, run:
@@ -46,14 +47,14 @@ gh issue view {current-issue-number}
 |-------|-------|--------|
 | #1 | Project Setup: Cloudflare Pages + Workers | COMPLETE |
 | #2 | Data Pipeline: ethereum-lists/chains integration | COMPLETE |
-| #3 | Community Data: PR-based submissions | NOT STARTED |
+| #3 | Community Data: PR-based submissions | COMPLETE |
 | #4 | Frontend: Modern, mobile-first UI | NOT STARTED |
 | #5 | Wallet Integration: EIP-3085 | NOT STARTED |
 | #6 | Performance: Edge caching | NOT STARTED |
 | #7 | CI/CD: GitHub Actions | NOT STARTED |
 | #8 | SEO & Analytics | NOT STARTED |
 
-**CURRENT ISSUE: #3**
+**CURRENT ISSUE: #4**
 
 ## Technical Decisions (Locked)
 
@@ -93,6 +94,14 @@ git checkout main
 # After completing issue (don't push)
 git add .
 git commit -m "feat: implement issue #{N} - description"
+
+# Rebase feature branch to main (USE THIS instead of merge)
+git checkout main
+git rebase feature/issue-{N}-description
+
+# Push after rebase (when told)
+git push origin main
+git push origin feature/issue-{N}-description
 ```
 
 ## Session Start Checklist
