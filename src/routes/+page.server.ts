@@ -7,7 +7,7 @@ const chains = chainsMini as ChainMini[];
 const chainStats = stats as ChainStats;
 
 // Popular chains to show first (by chainId)
-const POPULAR_CHAIN_IDS = [1, 56, 137, 42161, 10, 43114, 8453, 324, 250, 100];
+const POPULAR_CHAIN_IDS = [1,56,8453,9745,42161,43114,137,747474,80094,25,534352,10,5000,57073,59144];
 
 export const load: PageServerLoad = async () => {
 	// Get popular chains
