@@ -141,6 +141,28 @@ export function validateChainData(chainData: ChainEIP3085): { valid: boolean; er
 }
 
 /**
+ * Check if an error indicates the chain needs to be added
+ */
+function isChainNotAddedError(error: any): boolean {
+	// Standard EIP-1193 error code
+	if (error.code === WALLET_ERRORS.CHAIN_NOT_ADDED) return true;
+
+	// Some wallets use different error codes
+	if (error.code === -32603) return true; // Internal error (used by some wallets)
+	if (error.code === -32000) return true; // Generic error (used by some wallets)
+
+	// Check error message for common patterns
+	const message = (error.message || '').toLowerCase();
+	if (message.includes('unrecognized chain')) return true;
+	if (message.includes('chain not added')) return true;
+	if (message.includes('unknown chain')) return true;
+	if (message.includes('try adding the chain')) return true;
+	if (message.includes('wallet_addethereumchain')) return true;
+
+	return false;
+}
+
+/**
  * Try to switch to an existing chain
  */
 async function switchChain(chainId: string): Promise<WalletResult> {
@@ -151,7 +173,7 @@ async function switchChain(chainId: string): Promise<WalletResult> {
 		});
 		return { success: true, switched: true };
 	} catch (error: any) {
-		if (error.code === WALLET_ERRORS.CHAIN_NOT_ADDED) {
+		if (isChainNotAddedError(error)) {
 			// Chain doesn't exist, need to add it
 			return { success: false, errorCode: WALLET_ERRORS.CHAIN_NOT_ADDED };
 		}
