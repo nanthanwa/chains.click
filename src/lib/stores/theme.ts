@@ -1,11 +1,17 @@
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 import { browser } from '$app/environment';
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = 'light' | 'dark';
+
+function getSystemTheme(): Theme {
+	if (!browser) return 'light';
+	return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 
 function createThemeStore() {
-	const storedTheme = browser ? (localStorage.getItem('theme') as Theme) : null;
-	const { subscribe, set, update } = writable<Theme>(storedTheme || 'system');
+	const storedTheme = browser ? (localStorage.getItem('theme') as Theme | null) : null;
+	const initialTheme = storedTheme || getSystemTheme();
+	const { subscribe, set, update } = writable<Theme>(initialTheme);
 
 	return {
 		subscribe,
@@ -18,7 +24,7 @@ function createThemeStore() {
 		},
 		toggle: () => {
 			update((current) => {
-				const next = current === 'dark' ? 'light' : 'dark';
+				const next: Theme = current === 'dark' ? 'light' : 'dark';
 				if (browser) {
 					localStorage.setItem('theme', next);
 					applyTheme(next);
@@ -28,8 +34,8 @@ function createThemeStore() {
 		},
 		init: () => {
 			if (browser) {
-				const stored = localStorage.getItem('theme') as Theme;
-				const theme = stored || 'system';
+				const stored = localStorage.getItem('theme') as Theme | null;
+				const theme = stored || getSystemTheme();
 				applyTheme(theme);
 				set(theme);
 			}
@@ -41,10 +47,7 @@ function applyTheme(theme: Theme) {
 	if (!browser) return;
 
 	const root = document.documentElement;
-	const isDark =
-		theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-	if (isDark) {
+	if (theme === 'dark') {
 		root.classList.add('dark');
 	} else {
 		root.classList.remove('dark');
@@ -52,3 +55,6 @@ function applyTheme(theme: Theme) {
 }
 
 export const theme = createThemeStore();
+
+// Derived store to check if currently dark
+export const isDark = derived(theme, ($theme) => $theme === 'dark');
