@@ -1,232 +1,212 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
-	import type { ChainMini } from '$lib/types';
+	import type { ChainMini, ChainEIP3085 } from '$lib/types';
+	import { Header, ChainList, ChainModal } from '$lib/components';
+	import { theme } from '$lib/stores/theme';
+	import { searchQuery, showTestnets, isSearching } from '$lib/stores/search';
 
 	let { data }: { data: PageData } = $props();
 
-	let searchQuery = $state('');
 	let searchResults = $state<ChainMini[]>([]);
-	let isSearching = $state(false);
-	let showTestnets = $state(false);
+	let selectedChain = $state<ChainMini | null>(null);
+	let selectedChainData = $state<ChainEIP3085 | undefined>(undefined);
+	let isLoadingChainData = $state(false);
 
 	// Debounced search
 	let searchTimeout: ReturnType<typeof setTimeout>;
 
+	onMount(() => {
+		theme.init();
+	});
+
 	async function handleSearch() {
-		const query = searchQuery.trim();
+		const query = $searchQuery.trim();
 		if (!query) {
 			searchResults = [];
 			return;
 		}
 
-		isSearching = true;
+		$isSearching = true;
 		clearTimeout(searchTimeout);
 
 		searchTimeout = setTimeout(async () => {
 			try {
 				const params = new URLSearchParams({
 					q: query,
-					limit: '20',
-					testnet: showTestnets ? 'true' : 'false'
+					limit: '50'
 				});
+				if (!$showTestnets) {
+					params.set('testnet', 'false');
+				}
 				const res = await fetch(`/api/chains?${params}`);
 				const json = await res.json();
 				searchResults = json.chains;
 			} catch (e) {
 				console.error('Search failed:', e);
+				searchResults = [];
 			} finally {
-				isSearching = false;
+				$isSearching = false;
 			}
 		}, 200);
 	}
 
-	function getChainIcon(chain: ChainMini): string {
-		if (chain.icon?.startsWith('ipfs://')) {
-			return chain.icon.replace('ipfs://', 'https://ipfs.io/ipfs/');
+	async function handleSelectChain(chain: ChainMini) {
+		selectedChain = chain;
+		selectedChainData = undefined;
+		isLoadingChainData = true;
+
+		try {
+			const res = await fetch(`/api/chains/${chain.id}`);
+			if (res.ok) {
+				selectedChainData = await res.json();
+			}
+		} catch (e) {
+			console.error('Failed to load chain data:', e);
+		} finally {
+			isLoadingChainData = false;
 		}
-		return chain.icon || '';
 	}
+
+	function handleCloseModal() {
+		selectedChain = null;
+		selectedChainData = undefined;
+	}
+
+	async function handleAddChain(chain: ChainMini) {
+		// Will be fully implemented in Issue #5
+		if (typeof window !== 'undefined' && (window as any).ethereum) {
+			try {
+				// Fetch chain data if not already loaded
+				let chainData = selectedChainData;
+				if (!chainData || selectedChain?.id !== chain.id) {
+					const res = await fetch(`/api/chains/${chain.id}`);
+					if (res.ok) {
+						chainData = await res.json();
+					}
+				}
+
+				if (!chainData) {
+					alert('Failed to load chain data');
+					return;
+				}
+
+				await (window as any).ethereum.request({
+					method: 'wallet_addEthereumChain',
+					params: [chainData]
+				});
+			} catch (error: any) {
+				if (error.code === 4001) {
+					// User rejected
+					console.log('User rejected the request');
+				} else {
+					console.error('Failed to add chain:', error);
+					alert(`Failed to add chain: ${error.message || 'Unknown error'}`);
+				}
+			}
+		} else {
+			alert('No wallet detected. Please install MetaMask or another Web3 wallet.');
+		}
+	}
+
+	// Filter chains based on testnet toggle
+	const filteredPopularChains = $derived(
+		$showTestnets ? data.popularChains : data.popularChains.filter(c => !c.isTestnet)
+	);
+
+	const filteredMainnets = $derived(
+		$showTestnets ? data.mainnets : data.mainnets.filter(c => !c.isTestnet)
+	);
 </script>
 
-<main class="container mx-auto px-4 py-8 max-w-6xl">
-	<!-- Header -->
-	<header class="text-center mb-12">
-		<h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">
-			chains.click
-		</h1>
-		<p class="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-			Add blockchain networks to your wallet with one click.
-			Fast, simple, mobile-friendly.
-		</p>
-	</header>
+<svelte:head>
+	<title>chains.click - Add chains to your wallet with one click</title>
+	<meta name="description" content="Add blockchain networks to MetaMask and other wallets instantly. Support for {data.stats.total}+ EVM chains." />
+</svelte:head>
 
-	<!-- Search Box -->
-	<div class="mb-8">
-		<div class="relative max-w-xl mx-auto">
-			<input
-				type="text"
-				bind:value={searchQuery}
-				oninput={handleSearch}
-				placeholder="Search {data.stats.total} chains by name, ID, or symbol..."
-				class="w-full px-4 py-3 pl-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-			/>
-			<svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-			</svg>
-			{#if isSearching}
-				<div class="absolute right-4 top-1/2 -translate-y-1/2">
-					<div class="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+<div class="min-h-screen bg-slate-50 dark:bg-slate-900">
+	<Header onSearch={handleSearch} />
+
+	<main class="container mx-auto px-4 py-6 max-w-6xl">
+		<!-- Stats -->
+		<div class="grid grid-cols-3 gap-3 mb-8 max-w-md mx-auto">
+			<div class="text-center p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+				<div class="text-2xl font-bold text-blue-500">{data.stats.total}</div>
+				<div class="text-xs text-slate-500 dark:text-slate-400">Chains</div>
+			</div>
+			<div class="text-center p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+				<div class="text-2xl font-bold text-emerald-500">{data.stats.mainnets}</div>
+				<div class="text-xs text-slate-500 dark:text-slate-400">Mainnets</div>
+			</div>
+			<div class="text-center p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+				<div class="text-2xl font-bold text-amber-500">{data.stats.testnets}</div>
+				<div class="text-xs text-slate-500 dark:text-slate-400">Testnets</div>
+			</div>
+		</div>
+
+		<!-- Search Results -->
+		{#if $searchQuery}
+			{#if $isSearching}
+				<div class="flex items-center justify-center py-12">
+					<div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
 				</div>
-			{/if}
-		</div>
-		<!-- Testnet toggle -->
-		<div class="flex justify-center mt-3">
-			<label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
-				<input
-					type="checkbox"
-					bind:checked={showTestnets}
-					onchange={handleSearch}
-					class="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-blue-500"
+			{:else}
+				<ChainList
+					chains={searchResults}
+					title="Search Results"
+					emptyMessage={`No chains found for "${$searchQuery}"`}
+					onAdd={handleAddChain}
+					onSelect={handleSelectChain}
 				/>
-				Include testnets
-			</label>
-		</div>
-	</div>
+			{/if}
+		{:else}
+			<!-- Popular Chains -->
+			<ChainList
+				chains={filteredPopularChains}
+				title="Popular Chains"
+				onAdd={handleAddChain}
+				onSelect={handleSelectChain}
+			/>
 
-	<!-- Stats -->
-	<div class="grid grid-cols-3 gap-4 mb-12 max-w-lg mx-auto">
-		<div class="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-			<div class="text-2xl font-bold text-blue-500">{data.stats.total}</div>
-			<div class="text-sm text-slate-600 dark:text-slate-400">Chains</div>
-		</div>
-		<div class="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-			<div class="text-2xl font-bold text-emerald-500">{data.stats.mainnets}</div>
-			<div class="text-sm text-slate-600 dark:text-slate-400">Mainnets</div>
-		</div>
-		<div class="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-			<div class="text-2xl font-bold text-amber-500">{data.stats.testnets}</div>
-			<div class="text-sm text-slate-600 dark:text-slate-400">Testnets</div>
-		</div>
-	</div>
-
-	<!-- Search Results -->
-	{#if searchQuery && searchResults.length > 0}
-		<section class="mb-12">
-			<h2 class="text-xl font-semibold mb-4">Search Results</h2>
-			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-				{#each searchResults as chain (chain.id)}
-					<div class="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:shadow-md transition-shadow">
-						<div class="flex items-center justify-between">
-							<div class="flex items-center gap-3 min-w-0">
-								{#if chain.icon}
-									<img src={getChainIcon(chain)} alt="" class="w-8 h-8 rounded-full flex-shrink-0" loading="lazy" />
-								{:else}
-									<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0"></div>
-								{/if}
-								<div class="min-w-0">
-									<h3 class="font-medium truncate">{chain.name}</h3>
-									<p class="text-sm text-slate-500">
-										{chain.symbol} · ID: {chain.id}
-										{#if chain.isTestnet}
-											<span class="text-amber-500">(Testnet)</span>
-										{/if}
-									</p>
-								</div>
-							</div>
-							<button
-								class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors flex-shrink-0 ml-2"
-								onclick={() => alert(`Add ${chain.name} - coming in Issue #5!`)}
-							>
-								Add
-							</button>
-						</div>
-					</div>
-				{/each}
-			</div>
-		</section>
-	{:else if searchQuery && !isSearching}
-		<div class="text-center py-8 text-slate-500">
-			No chains found for "{searchQuery}"
-		</div>
-	{/if}
-
-	<!-- Popular Chains -->
-	{#if !searchQuery}
-		<section class="mb-12">
-			<h2 class="text-xl font-semibold mb-4">Popular Chains</h2>
-			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-				{#each data.popularChains as chain (chain.id)}
-					<div class="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:shadow-md transition-shadow">
-						<div class="flex items-center justify-between">
-							<div class="flex items-center gap-3 min-w-0">
-								{#if chain.icon}
-									<img src={getChainIcon(chain)} alt="" class="w-8 h-8 rounded-full flex-shrink-0" loading="lazy" />
-								{:else}
-									<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0"></div>
-								{/if}
-								<div class="min-w-0">
-									<h3 class="font-medium truncate">{chain.name}</h3>
-									<p class="text-sm text-slate-500">{chain.symbol} · ID: {chain.id}</p>
-								</div>
-							</div>
-							<button
-								class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors flex-shrink-0 ml-2"
-								onclick={() => alert(`Add ${chain.name} - coming in Issue #5!`)}
-							>
-								Add
-							</button>
-						</div>
-					</div>
-				{/each}
-			</div>
-		</section>
-
-		<!-- Other Mainnets -->
-		<section class="mb-12">
-			<h2 class="text-xl font-semibold mb-4">Other Mainnets</h2>
-			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-				{#each data.mainnets.slice(0, 12) as chain (chain.id)}
-					<div class="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:shadow-md transition-shadow">
-						<div class="flex items-center justify-between">
-							<div class="flex items-center gap-3 min-w-0">
-								{#if chain.icon}
-									<img src={getChainIcon(chain)} alt="" class="w-8 h-8 rounded-full flex-shrink-0" loading="lazy" />
-								{:else}
-									<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex-shrink-0"></div>
-								{/if}
-								<div class="min-w-0">
-									<h3 class="font-medium truncate">{chain.name}</h3>
-									<p class="text-sm text-slate-500">{chain.symbol} · ID: {chain.id}</p>
-								</div>
-							</div>
-							<button
-								class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors flex-shrink-0 ml-2"
-								onclick={() => alert(`Add ${chain.name} - coming in Issue #5!`)}
-							>
-								Add
-							</button>
-						</div>
-					</div>
-				{/each}
-			</div>
-		</section>
-	{/if}
+			<!-- All Mainnets -->
+			<ChainList
+				chains={filteredMainnets}
+				title={$showTestnets ? "All Chains" : "Other Mainnets"}
+				initialCount={12}
+				loadMoreCount={24}
+				onAdd={handleAddChain}
+				onSelect={handleSelectChain}
+			/>
+		{/if}
+	</main>
 
 	<!-- Footer -->
-	<footer class="text-center text-sm text-slate-500 dark:text-slate-400 pt-8 border-t border-slate-200 dark:border-slate-700">
-		<p class="mb-2">
-			Last updated: {new Date(data.stats.lastUpdated).toLocaleDateString()}
-		</p>
-		<p>
-			Data sourced from
-			<a href="https://github.com/ethereum-lists/chains" target="_blank" rel="noopener" class="text-blue-500 hover:underline">
-				ethereum-lists/chains
-			</a>
-		</p>
-		<p class="mt-2">
-			<a href="https://github.com/nanthanwa/chains.click" target="_blank" rel="noopener" class="hover:underline">
-				Contribute on GitHub
-			</a>
-		</p>
+	<footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 mt-8">
+		<div class="container mx-auto px-4 py-6 max-w-6xl">
+			<div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500 dark:text-slate-400">
+				<p>
+					Data from
+					<a href="https://github.com/ethereum-lists/chains" target="_blank" rel="noopener" class="text-blue-500 hover:underline">
+						ethereum-lists/chains
+					</a>
+					· Last updated: {new Date(data.stats.lastUpdated).toLocaleDateString()}
+				</p>
+				<div class="flex items-center gap-4">
+					<a href="/api/chains" class="hover:text-slate-700 dark:hover:text-slate-300">API</a>
+					<a href="https://github.com/nanthanwa/chains.click" target="_blank" rel="noopener" class="hover:text-slate-700 dark:hover:text-slate-300">GitHub</a>
+				</div>
+			</div>
+		</div>
 	</footer>
-</main>
+</div>
+
+<!-- Chain Detail Modal -->
+{#if selectedChain}
+	<ChainModal
+		chain={selectedChain}
+		chainData={selectedChainData}
+		isLoading={isLoadingChainData}
+		onClose={handleCloseModal}
+		onAdd={handleAddChain}
+	/>
+{/if}
