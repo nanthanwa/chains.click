@@ -15,7 +15,7 @@ ENVIRONMENT = "development"
 [env.production.vars]
 ENVIRONMENT = "production"
 
-# Staging environment
-[env.staging]
-[env.staging.vars]
-ENVIRONMENT = "staging"
+# Preview environment (for PR deployments)
+[env.preview]
+[env.preview.vars]
+ENVIRONMENT = "preview"
