@@ -1,72 +1,33 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import type { ChainEIP3085 } from '$lib/types';
+import chainsEIP3085 from '$lib/data/chains-eip3085.json';
 
-// Placeholder - will be replaced with data from Issue #2
-const CHAINS_BY_ID: Record<number, object> = {
-	1: {
-		chainId: 1,
-		name: 'Ethereum Mainnet',
-		shortName: 'eth',
-		chain: 'ETH',
-		nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-		rpc: [
-			'https://eth.llamarpc.com',
-			'https://rpc.ankr.com/eth',
-			'https://eth-mainnet.public.blastapi.io'
-		],
-		explorers: [
-			{ name: 'Etherscan', url: 'https://etherscan.io', standard: 'EIP3091' }
-		],
-		infoURL: 'https://ethereum.org'
-	},
-	56: {
-		chainId: 56,
-		name: 'BNB Smart Chain',
-		shortName: 'bnb',
-		chain: 'BSC',
-		nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-		rpc: [
-			'https://bsc-dataseed.binance.org',
-			'https://bsc-dataseed1.defibit.io'
-		],
-		explorers: [
-			{ name: 'BscScan', url: 'https://bscscan.com', standard: 'EIP3091' }
-		],
-		infoURL: 'https://www.bnbchain.org'
-	},
-	137: {
-		chainId: 137,
-		name: 'Polygon',
-		shortName: 'matic',
-		chain: 'Polygon',
-		nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-		rpc: [
-			'https://polygon-rpc.com',
-			'https://rpc-mainnet.maticvigil.com'
-		],
-		explorers: [
-			{ name: 'PolygonScan', url: 'https://polygonscan.com', standard: 'EIP3091' }
-		],
-		infoURL: 'https://polygon.technology'
-	}
-};
+const chains = chainsEIP3085 as Record<string, ChainEIP3085>;
 
-export const GET: RequestHandler = async ({ params }) => {
+export const GET: RequestHandler = async ({ params, url }) => {
 	const chainId = parseInt(params.chainId, 10);
+	const format = url.searchParams.get('format') || 'eip3085';
 
 	if (isNaN(chainId)) {
 		throw error(400, 'Invalid chain ID');
 	}
 
-	const chain = CHAINS_BY_ID[chainId];
+	const chain = chains[chainId.toString()];
 
 	if (!chain) {
 		throw error(404, `Chain with ID ${chainId} not found`);
 	}
 
-	return json(chain, {
-		headers: {
-			'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
-		}
-	});
+	// Return EIP-3085 format for wallet integration
+	if (format === 'eip3085') {
+		return json(chain, {
+			headers: {
+				'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
+			}
+		});
+	}
+
+	// Return full chain data if requested
+	throw error(400, 'Invalid format. Use format=eip3085');
 };

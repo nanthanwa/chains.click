@@ -45,7 +45,7 @@ gh issue view {current-issue-number}
 | Issue | Title | Status |
 |-------|-------|--------|
 | #1 | Project Setup: Cloudflare Pages + Workers | COMPLETE |
-| #2 | Data Pipeline: ethereum-lists/chains integration | NOT STARTED |
+| #2 | Data Pipeline: ethereum-lists/chains integration | COMPLETE |
 | #3 | Community Data: PR-based submissions | NOT STARTED |
 | #4 | Frontend: Modern, mobile-first UI | NOT STARTED |
 | #5 | Wallet Integration: EIP-3085 | NOT STARTED |
@@ -53,7 +53,7 @@ gh issue view {current-issue-number}
 | #7 | CI/CD: GitHub Actions | NOT STARTED |
 | #8 | SEO & Analytics | NOT STARTED |
 
-**CURRENT ISSUE: #2**
+**CURRENT ISSUE: #3**
 
 ## Technical Decisions (Locked)
 
