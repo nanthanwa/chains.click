@@ -8,6 +8,7 @@ import { writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync } from 
 import { join } from 'path';
 
 const CHAINS_REPO_API = 'https://api.github.com/repos/ethereum-lists/chains/contents/_data/chains';
+const CHAINS_TREE_API = 'https://api.github.com/repos/ethereum-lists/chains/git/trees/master?recursive=1';
 const CUSTOM_CHAINS_DIR = join(process.cwd(), '_data', 'custom', 'chains');
 const CUSTOM_ICONS_DIR = join(process.cwd(), '_data', 'custom', 'icons');
 const ICONS_REPO_API = 'https://api.github.com/repos/ethereum-lists/chains/contents/_data/icons';
@@ -123,19 +124,35 @@ function toHexChainId(chainId: number): string {
 	return '0x' + chainId.toString(16);
 }
 
+// Get GitHub token from environment for higher rate limits (5000/hr vs 60/hr)
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+if (GITHUB_TOKEN) {
+	console.log('Using authenticated GitHub API (5000 requests/hr)');
+} else {
+	console.log('Warning: No GITHUB_TOKEN set. Using unauthenticated API (60 requests/hr)');
+	console.log('Set GITHUB_TOKEN env var for faster syncing');
+}
+
 async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
+	const headers: Record<string, string> = {
+		'Accept': 'application/vnd.github.v3+json',
+		'User-Agent': 'chains.click-sync'
+	};
+	if (GITHUB_TOKEN) {
+		headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+	}
+
 	for (let i = 0; i < retries; i++) {
 		try {
-			const response = await fetch(url, {
-				headers: {
-					'Accept': 'application/vnd.github.v3+json',
-					'User-Agent': 'chains.click-sync'
-				}
-			});
+			const response = await fetch(url, { headers });
 			if (response.ok) return response;
 			if (response.status === 403) {
-				console.warn('Rate limited, waiting 60s...');
-				await new Promise(r => setTimeout(r, 60000));
+				const resetTime = response.headers.get('x-ratelimit-reset');
+				const waitTime = resetTime
+					? Math.max(0, parseInt(resetTime) * 1000 - Date.now()) + 1000
+					: 60000;
+				console.warn(`Rate limited, waiting ${Math.ceil(waitTime / 1000)}s...`);
+				await new Promise(r => setTimeout(r, waitTime));
 				continue;
 			}
 			throw new Error(`HTTP ${response.status}`);
@@ -148,12 +165,22 @@ async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
 }
 
 async function fetchChainFiles(): Promise<string[]> {
-	console.log('Fetching chain file list...');
-	const response = await fetchWithRetry(CHAINS_REPO_API);
-	const files = await response.json() as Array<{ name: string; download_url: string }>;
-	return files
-		.filter(f => f.name.startsWith('eip155-') && f.name.endsWith('.json'))
-		.map(f => f.name);
+	console.log('Fetching chain file list using Git Tree API...');
+
+	// Use Git Tree API to get all files in one request (avoids pagination limits)
+	const response = await fetchWithRetry(CHAINS_TREE_API);
+	const data = await response.json() as { tree: Array<{ path: string; type: string }> };
+
+	const chainFiles = data.tree
+		.filter(item =>
+			item.type === 'blob' &&
+			item.path.startsWith('_data/chains/eip155-') &&
+			item.path.endsWith('.json')
+		)
+		.map(item => item.path.replace('_data/chains/', ''));
+
+	console.log(`Total chain files found: ${chainFiles.length}`);
+	return chainFiles;
 }
 
 async function fetchChainData(filename: string): Promise<ChainData | null> {
