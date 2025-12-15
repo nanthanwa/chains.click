@@ -6,11 +6,12 @@ compatibility_flags = ["nodejs_compat"]
 # Pages-specific settings
 pages_build_output_dir = ".svelte-kit/cloudflare"
 
-# KV Namespaces for chain data caching (to be created in Cloudflare dashboard)
-# Uncomment after creating the KV namespace
-# [[kv_namespaces]]
-# binding = "CHAINS_KV"
-# id = "your-kv-namespace-id"
+# KV Namespaces for chain data caching
+# Create in Cloudflare dashboard: Workers & Pages > KV > Create namespace
+# Then update the id below with your namespace ID
+[[kv_namespaces]]
+binding = "CHAINS_KV"
+id = "chains_kv_placeholder"  # Replace with actual KV namespace ID
 
 # Environment variables
 [vars]
@@ -21,7 +22,16 @@ ENVIRONMENT = "development"
 [env.production.vars]
 ENVIRONMENT = "production"
 
+# Production KV namespace (create separate namespace for prod)
+[[env.production.kv_namespaces]]
+binding = "CHAINS_KV"
+id = "chains_kv_production"  # Replace with production KV namespace ID
+
 # Staging environment
 [env.staging]
 [env.staging.vars]
 ENVIRONMENT = "staging"
+
+[[env.staging.kv_namespaces]]
+binding = "CHAINS_KV"
+id = "chains_kv_staging"  # Replace with staging KV namespace ID

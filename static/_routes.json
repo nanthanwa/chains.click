@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "description": "Cloudflare Pages routing configuration",
+  "include": [
+    "/api/*",
+    "/"
+  ],
+  "exclude": [
+    "/_app/*",
+    "/favicon.svg",
+    "/*.json"
+  ]
+}

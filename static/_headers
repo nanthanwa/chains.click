@@ -1,0 +1,51 @@
+# Cloudflare Pages custom headers
+# https://developers.cloudflare.com/pages/configuration/headers/
+
+# Default security headers for all pages
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# HTML pages - short cache with revalidation
+/*.html
+  Cache-Control: public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800
+
+# JavaScript and CSS - long cache (hashed filenames)
+/_app/immutable/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Fonts - long cache
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+/*.woff
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+# Images and icons - long cache
+/*.svg
+  Cache-Control: public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400
+
+/*.png
+  Cache-Control: public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400
+
+/*.ico
+  Cache-Control: public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400
+
+/*.webp
+  Cache-Control: public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400
+
+# JSON data files - moderate cache
+/*.json
+  Cache-Control: public, max-age=300, s-maxage=3600, stale-while-revalidate=86400
+  Access-Control-Allow-Origin: *
+
+# API endpoints - handled by SvelteKit, but set CORS
+/api/*
+  Access-Control-Allow-Origin: *
+  Access-Control-Allow-Methods: GET, OPTIONS
+  Access-Control-Allow-Headers: Content-Type, If-None-Match
+  Access-Control-Max-Age: 86400
