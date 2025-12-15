@@ -93,12 +93,19 @@
 		<!-- Filters -->
 		<div class="flex items-center justify-between mt-3">
 			<label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-				<input
-					type="checkbox"
-					bind:checked={$showTestnets}
-					onchange={handleInput}
-					class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 dark:bg-slate-700"
-				/>
+				<span class="relative flex items-center justify-center w-5 h-5 border-2 rounded transition-colors {$showTestnets ? 'bg-blue-500 border-blue-500' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'}">
+					<input
+						type="checkbox"
+						bind:checked={$showTestnets}
+						onchange={handleInput}
+						class="absolute inset-0 opacity-0 cursor-pointer"
+					/>
+					{#if $showTestnets}
+						<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+						</svg>
+					{/if}
+				</span>
 				Show testnets
 			</label>
 		</div>
