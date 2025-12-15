@@ -1,0 +1,5 @@
+# Local development variables for Cloudflare Workers
+# Copy this file to .dev.vars and fill in your values
+# These are used when running `wrangler pages dev`
+
+ENVIRONMENT=development
