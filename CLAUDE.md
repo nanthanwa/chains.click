@@ -49,12 +49,12 @@ gh issue view {current-issue-number}
 | #2 | Data Pipeline: ethereum-lists/chains integration | COMPLETE |
 | #3 | Community Data: PR-based submissions | COMPLETE |
 | #4 | Frontend: Modern, mobile-first UI | COMPLETE |
-| #5 | Wallet Integration: EIP-3085 | NOT STARTED |
+| #5 | Wallet Integration: EIP-3085 | COMPLETE |
 | #6 | Performance: Edge caching | NOT STARTED |
 | #7 | CI/CD: GitHub Actions | NOT STARTED |
 | #8 | SEO & Analytics | NOT STARTED |
 
-**CURRENT ISSUE: #5**
+**CURRENT ISSUE: #6**
 
 ## Technical Decisions (Locked)
 
