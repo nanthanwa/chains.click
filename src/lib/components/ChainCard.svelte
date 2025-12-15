@@ -2,6 +2,7 @@
 	import type { ChainMini, ChainEIP3085 } from '$lib/types';
 	import { addChain, formatWalletError, getSuccessMessage, hasWallet } from '$lib/wallet';
 	import { toast } from '$lib/stores/toast';
+	import { getIconUrl } from '$lib/utils/ipfs';
 
 	let {
 		chain,
@@ -48,14 +49,6 @@
 		} finally {
 			isAdding = false;
 		}
-	}
-
-	function getIconUrl(icon: string | undefined): string {
-		if (!icon) return '';
-		if (icon.startsWith('ipfs://')) {
-			return icon.replace('ipfs://', 'https://ipfs.io/ipfs/');
-		}
-		return icon;
 	}
 
 	function handleKeydown(e: KeyboardEvent) {

@@ -6,19 +6,12 @@
 	import { theme } from '$lib/stores/theme';
 	import { toast } from '$lib/stores/toast';
 	import { addChain, formatWalletError, getSuccessMessage, hasWallet, isMobileBrowser, getMobileDeepLink, getWalletDisplayName } from '$lib/wallet';
+	import { getIconUrl } from '$lib/utils/ipfs';
 	import { onMount } from 'svelte';
 
 	let { data }: { data: PageData } = $props();
 
 	let isAdding = $state(false);
-
-	function getIconUrl(icon: string | undefined): string {
-		if (!icon) return '';
-		if (icon.startsWith('ipfs://')) {
-			return icon.replace('ipfs://', 'https://ipfs.io/ipfs/');
-		}
-		return icon;
-	}
 
 	// Build EIP-3085 format for wallet
 	const chainData: ChainEIP3085 = $derived({
