@@ -183,7 +183,7 @@
 					<a href="https://github.com/ethereum-lists/chains" target="_blank" rel="noopener" class="text-blue-500 hover:underline">
 						ethereum-lists/chains
 					</a>
-					· Last updated: {new Date(data.stats.lastUpdated).toLocaleDateString()}
+					· Last updated: {new Date(data.stats.lastUpdated).toLocaleString()}
 				</p>
 				<div class="flex items-center gap-4">
 					<a href="/api/chains" class="hover:text-slate-700 dark:hover:text-slate-300">API</a>
