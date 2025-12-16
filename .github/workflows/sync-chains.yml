@@ -51,3 +51,9 @@ jobs:
           $(cat static/data/stats.json | jq -r '"Total: \(.total) chains (\(.mainnets) mainnets, \(.testnets) testnets)"')
           Last updated: $(cat static/data/stats.json | jq -r '.lastUpdated')"
           git push
+
+      - name: Trigger deployment
+        if: steps.changes.outputs.changed == 'true'
+        run: gh workflow run deploy.yml
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
