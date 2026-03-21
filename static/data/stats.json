@@ -1,8 +1,8 @@
 {
-  "total": 2520,
-  "mainnets": 1327,
+  "total": 2521,
+  "mainnets": 1328,
   "testnets": 1193,
-  "withRpc": 2334,
+  "withRpc": 2336,
   "custom": 0,
-  "lastUpdated": "2026-03-21T12:11:47.863Z"
+  "lastUpdated": "2026-03-21T18:11:10.870Z"
 }
